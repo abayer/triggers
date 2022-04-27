@@ -45,6 +45,10 @@ func VolumeMask(ctx context.Context, in *corev1.Volume) *corev1.Volume {
 		out.EmptyDir = in.EmptyDir
 	}
 
+	if cfg.Features.PodSpecPersistentVolumeClaim != config.Disabled {
+		out.PersistentVolumeClaim = in.PersistentVolumeClaim
+	}
+
 	return out
 }
 
@@ -65,6 +69,10 @@ func VolumeSourceMask(ctx context.Context, in *corev1.VolumeSource) *corev1.Volu
 
 	if cfg.Features.PodSpecVolumesEmptyDir != config.Disabled {
 		out.EmptyDir = in.EmptyDir
+	}
+
+	if cfg.Features.PodSpecPersistentVolumeClaim != config.Disabled {
+		out.PersistentVolumeClaim = in.PersistentVolumeClaim
 	}
 
 	// Too many disallowed fields to list
@@ -210,10 +218,15 @@ func PodSpecMask(ctx context.Context, in *corev1.PodSpec) *corev1.PodSpec {
 	if cfg.Features.PodSpecPriorityClassName != config.Disabled {
 		out.PriorityClassName = in.PriorityClassName
 	}
+	if cfg.Features.PodSpecSchedulerName != config.Disabled {
+		out.SchedulerName = in.SchedulerName
+	}
+	if cfg.Features.PodSpecInitContainers != config.Disabled {
+		out.InitContainers = in.InitContainers
+	}
 
 	// Disallowed fields
 	// This list is unnecessary, but added here for clarity
-	out.InitContainers = nil
 	out.RestartPolicy = ""
 	out.TerminationGracePeriodSeconds = nil
 	out.ActiveDeadlineSeconds = nil
@@ -225,7 +238,6 @@ func PodSpecMask(ctx context.Context, in *corev1.PodSpec) *corev1.PodSpec {
 	out.ShareProcessNamespace = nil
 	out.Hostname = ""
 	out.Subdomain = ""
-	out.SchedulerName = ""
 	out.Priority = nil
 	out.DNSConfig = nil
 	out.ReadinessGates = nil
@@ -362,6 +374,7 @@ func HTTPGetActionMask(in *corev1.HTTPGetAction) *corev1.HTTPGetAction {
 	out.Path = in.Path
 	out.Scheme = in.Scheme
 	out.HTTPHeaders = in.HTTPHeaders
+	out.Port = in.Port
 
 	return out
 }
@@ -377,6 +390,7 @@ func TCPSocketActionMask(in *corev1.TCPSocketAction) *corev1.TCPSocketAction {
 
 	// Allowed fields
 	out.Host = in.Host
+	out.Port = in.Port
 
 	return out
 }
@@ -609,17 +623,14 @@ func SecurityContextMask(ctx context.Context, in *corev1.SecurityContext) *corev
 	out := new(corev1.SecurityContext)
 
 	// Allowed fields
-	out.RunAsUser = in.RunAsUser
-	if in.RunAsNonRoot != nil && *in.RunAsNonRoot {
-		out.RunAsNonRoot = in.RunAsNonRoot
-	}
-	out.ReadOnlyRootFilesystem = in.ReadOnlyRootFilesystem
 	out.Capabilities = in.Capabilities
+	out.ReadOnlyRootFilesystem = in.ReadOnlyRootFilesystem
+	out.RunAsUser = in.RunAsUser
+	out.RunAsGroup = in.RunAsGroup
+	// RunAsNonRoot when unset behaves the same way as false
+	// We do want the ability for folks to set this value to true
+	out.RunAsNonRoot = in.RunAsNonRoot
 
-	if config.FromContextOrDefaults(ctx).Features.PodSpecSecurityContext != config.Disabled {
-		out.RunAsGroup = in.RunAsGroup
-		out.RunAsNonRoot = in.RunAsNonRoot
-	}
 	// Disallowed
 	// This list is unnecessary, but added here for clarity
 	out.Privileged = nil
