@@ -507,7 +507,7 @@ func (r Sink) ExecuteInterceptors(trInt []*triggersv1.TriggerInterceptor, in *ht
 		request.InterceptorParams = interceptors.GetInterceptorParams(i)
 
 		var url *apis.URL
-		if i.Ref.Kind == triggersv1.ClusterInterceptorKind {
+		if i.Ref.Kind == triggersv1.ClusterInterceptorKind || i.Ref.Kind == "" {
 			ic, err := r.ClusterInterceptorLister.Get(i.GetName())
 			if err != nil {
 				return nil, nil, nil, fmt.Errorf("url resolution failed for interceptor %s with: %w", i.GetName(), err)
